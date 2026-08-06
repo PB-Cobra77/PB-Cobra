@@ -143,6 +143,19 @@
   .tag-sewa{background:#FCEEDA;color:var(--gold-deep);}
   .tag-lain{background:#EFEBDC;color:var(--ink-soft);}
 
+  .pagination{
+    display:none;
+    justify-content:space-between;
+    align-items:center;
+    gap:10px;
+    margin-top:14px;
+    padding-top:14px;
+    border-top:1px solid #EFEBDC;
+  }
+  .pagination span{font-size:12.5px;color:var(--ink-soft);}
+  .pagination .btn-ghost{color:var(--court-green-deep);border-color:#DAD4BE;}
+  .pagination .btn-ghost:disabled{opacity:0.4;cursor:not-allowed;}
+
   .empty{text-align:center;padding:26px 10px;color:var(--ink-soft);font-size:13px;}
 
   .sched-card{background:var(--card);border-radius:14px;padding:16px 18px;margin-bottom:14px;box-shadow:0 8px 20px var(--shadow);border-left:5px solid var(--gold);}
@@ -367,6 +380,11 @@
         </table>
       </div>
       <div id="t-empty" class="empty" style="display:none;">Belum ada transaksi.</div>
+      <div class="pagination" id="t-pagination">
+        <button class="btn btn-ghost" id="t-prev" type="button">&laquo; Sebelumnya</button>
+        <span id="t-page-info"></span>
+        <button class="btn btn-ghost" id="t-next" type="button">Berikutnya &raquo;</button>
+      </div>
     </div>
 
     <div class="card">
@@ -468,6 +486,8 @@ const DAY_NAMES = ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
 let transactions = [];
 let schedules = [];
 let isAdmin = false;
+let tPage = 1;
+const T_PAGE_SIZE = 15;
 
 const rupiah = n => 'Rp ' + Math.round(n).toLocaleString('id-ID');
 const todayISO = () => new Date().toISOString().slice(0,10);
@@ -734,7 +754,13 @@ document.getElementById('form-debt').addEventListener('submit', async (e)=>{
 
 /* ---------- Data loading ---------- */
 async function loadTransactions(){
-  const { data, error } = await sb.from('transactions').select('*').order('date', { ascending:false });
+  let { data, error } = await sb.from('transactions').select('*').order('date', { ascending:false }).order('created_at', { ascending:false });
+  if(error){
+    /* fallback jika kolom created_at tidak tersedia di tabel */
+    const fallback = await sb.from('transactions').select('*').order('date', { ascending:false });
+    data = fallback.data;
+    error = fallback.error;
+  }
   transactions = error ? [] : data;
   renderTransactions();
 }
@@ -780,16 +806,24 @@ function renderTransactions(){
   const filter = document.getElementById('t-filter').value;
   const body = document.getElementById('t-table-body');
   const empty = document.getElementById('t-empty');
+  const paginationEl = document.getElementById('t-pagination');
   let list = filter === 'all' ? transactions : transactions.filter(t=>t.type===filter);
 
   if(list.length===0){
     body.innerHTML='';
     empty.style.display='block';
+    paginationEl.style.display='none';
     return;
   }
   empty.style.display='none';
 
-  body.innerHTML = list.map(t=>{
+  const totalPages = Math.max(1, Math.ceil(list.length / T_PAGE_SIZE));
+  if(tPage > totalPages) tPage = totalPages;
+  if(tPage < 1) tPage = 1;
+  const start = (tPage - 1) * T_PAGE_SIZE;
+  const pageList = list.slice(start, start + T_PAGE_SIZE);
+
+  body.innerHTML = pageList.map(t=>{
     const dateFmt = new Date(t.date+'T00:00:00').toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric'});
     const tagClass = TAG_CLASS[t.category] || 'tag-lain';
     const amtClass = t.type==='in' ? 'amt-in' : 'amt-out';
@@ -811,9 +845,30 @@ function renderTransactions(){
       if(!error) loadTransactions();
     });
   });
+
+  if(totalPages > 1){
+    paginationEl.style.display = 'flex';
+    document.getElementById('t-page-info').textContent = `Halaman ${tPage} dari ${totalPages}`;
+    document.getElementById('t-prev').disabled = tPage <= 1;
+    document.getElementById('t-next').disabled = tPage >= totalPages;
+  }else{
+    paginationEl.style.display = 'none';
+  }
 }
 
-document.getElementById('t-filter').addEventListener('change', renderTransactions);
+document.getElementById('t-prev').addEventListener('click', ()=>{
+  tPage -= 1;
+  renderTransactions();
+});
+document.getElementById('t-next').addEventListener('click', ()=>{
+  tPage += 1;
+  renderTransactions();
+});
+
+document.getElementById('t-filter').addEventListener('change', ()=>{
+  tPage = 1;
+  renderTransactions();
+});
 
 document.getElementById('form-transaksi').addEventListener('submit', async (e)=>{
   e.preventDefault();
