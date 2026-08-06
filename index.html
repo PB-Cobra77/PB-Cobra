@@ -302,8 +302,12 @@
           <input id="j-date" type="date" required>
         </div>
         <div>
-          <label for="j-time">Jam</label>
+          <label for="j-time">Jam Mulai</label>
           <input id="j-time" type="time" required>
+        </div>
+        <div>
+          <label for="j-end-time">Jam Selesai (opsional)</label>
+          <input id="j-end-time" type="time">
         </div>
         <div class="full">
           <label for="j-loc">Lokasi Lapangan</label>
@@ -541,7 +545,7 @@ function renderSchedules(){
       <div class="sched-top">
         <div>
           <div class="sched-day">${dayName}, ${dateFmt}</div>
-          <div class="sched-meta">Jam ${s.time} &middot; ${escapeHtml(s.location)}</div>
+          <div class="sched-meta">Jam ${s.time}${s.end_time ? ' - ' + s.end_time : ''} &middot; ${escapeHtml(s.location)}</div>
           ${noteHtml}
         </div>
         ${delBtn}
@@ -589,6 +593,7 @@ document.getElementById('form-jadwal').addEventListener('submit', async (e)=>{
   const { error } = await sb.from('schedules').insert({
     date: document.getElementById('j-date').value,
     time: document.getElementById('j-time').value,
+    end_time: document.getElementById('j-end-time').value || null,
     location: document.getElementById('j-loc').value.trim(),
     note: document.getElementById('j-note').value.trim() || null
   });
@@ -600,6 +605,7 @@ document.getElementById('form-jadwal').addEventListener('submit', async (e)=>{
   document.getElementById('j-loc').value='';
   document.getElementById('j-note').value='';
   document.getElementById('j-time').value='';
+  document.getElementById('j-end-time').value='';
   document.getElementById('j-date').value = todayISO();
   setStatus(statusEl, 'Jadwal tersimpan.', false);
 });
