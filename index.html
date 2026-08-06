@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PB Cobra — Kas & Jadwal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root{
+    --court-green: #0B3D2E;
+    --court-green-deep: #082C21;
+    --court-line: #F4EFE1;
+    --card: #FFFDF7;
+    --gold: #D4A017;
+    --gold-deep: #A97D0F;
+    --net-red: #B23A2E;
+    --net-red-deep: #8A2C22;
+    --ink: #1C2B22;
+    --ink-soft: #5B6B60;
+    --shadow: rgba(8,44,33,0.18);
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background: var(--court-green);
+    background-image:
+      repeating-linear-gradient(0deg, rgba(244,239,225,0.035) 0px, rgba(244,239,225,0.035) 1px, transparent 1px, transparent 64px),
+      repeating-linear-gradient(90deg, rgba(244,239,225,0.035) 0px, rgba(244,239,225,0.035) 1px, transparent 1px, transparent 64px);
+    font-family:'Inter',sans-serif;
+    color:var(--ink);
+    min-height:100vh;
+    padding:0 0 60px;
+  }
+  .wrap{max-width:760px;margin:0 auto;padding:28px 18px;}
+
+  header{display:flex;align-items:center;gap:16px;margin-bottom:10px;}
+  .mark{width:56px;height:56px;flex:none;}
+  header h1{
+    font-family:'Bebas Neue',sans-serif;
+    font-size:40px;
+    letter-spacing:2px;
+    color:var(--court-line);
+    margin:0;
+    line-height:0.95;
+  }
+  header p{margin:2px 0 0;color:rgba(244,239,225,0.72);font-size:13px;letter-spacing:0.4px;}
+
+  .auth-bar{
+    display:flex;justify-content:flex-end;align-items:center;gap:10px;
+    margin-bottom:18px;font-size:13px;color:rgba(244,239,225,0.75);
+  }
+  .auth-bar button{
+    background:none;border:1px solid rgba(244,239,225,0.35);
+    color:rgba(244,239,225,0.9);padding:6px 12px;border-radius:8px;
+    font-family:'Inter',sans-serif;font-size:12.5px;font-weight:600;cursor:pointer;
+  }
+  .auth-bar button:hover{background:rgba(244,239,225,0.1);}
+  .login-box{
+    display:none;
+    background:var(--court-green-deep);
+    border:1px solid rgba(212,160,23,0.35);
+    border-radius:12px;
+    padding:14px;
+    margin-bottom:18px;
+    gap:8px;
+  }
+  .login-box.open{display:flex;flex-wrap:wrap;align-items:flex-end;}
+  .login-box .field{flex:1;min-width:140px;}
+  .login-box label{color:rgba(244,239,225,0.7);}
+  .login-box input{background:#0F4C39;border:1px solid rgba(244,239,225,0.25);color:var(--court-line);}
+  .login-box input::placeholder{color:rgba(244,239,225,0.4);}
+  .login-status{width:100%;font-size:12px;color:#E39187;margin-top:4px;}
+
+  nav.tabs{display:flex;gap:8px;margin-bottom:20px;}
+  nav.tabs button{
+    flex:1;padding:12px 10px;border-radius:10px;
+    border:1px solid rgba(244,239,225,0.25);
+    background:rgba(244,239,225,0.06);
+    color:rgba(244,239,225,0.75);
+    font-family:'Inter',sans-serif;font-weight:600;font-size:14px;letter-spacing:0.3px;
+    cursor:pointer;transition:all .15s ease;
+  }
+  nav.tabs button.active{background:var(--gold);border-color:var(--gold);color:#2B1F02;}
+  nav.tabs button:not(.active):hover{background:rgba(244,239,225,0.12);}
+
+  .panel{display:none;}
+  .panel.active{display:block;}
+
+  .scoreboard{
+    display:grid;grid-template-columns:repeat(3,1fr);gap:10px;
+    background:var(--court-green-deep);
+    border:1px solid rgba(212,160,23,0.35);
+    border-radius:14px;padding:16px 14px;margin-bottom:22px;
+  }
+  .score-cell{text-align:center;}
+  .score-cell .label{font-size:11px;letter-spacing:1.2px;text-transform:uppercase;color:rgba(244,239,225,0.55);margin-bottom:6px;}
+  .score-cell .value{font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:1px;color:var(--court-line);}
+  .score-cell.in .value{color:#8FD6A8;}
+  .score-cell.out .value{color:#E39187;}
+  .score-cell.saldo .value{color:var(--gold);}
+
+  .card{background:var(--card);border-radius:14px;padding:18px;margin-bottom:18px;box-shadow:0 8px 20px var(--shadow);}
+  .card h2{font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:0.6px;margin:0 0 14px;color:var(--court-green-deep);}
+
+  .admin-only{display:none;}
+  body.is-admin .admin-only{display:block;}
+  body.is-admin .admin-only-inline{display:inline-flex;}
+
+  form.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  form.grid .full{grid-column:1/-1;}
+  label{display:block;font-size:12px;font-weight:600;color:var(--ink-soft);margin-bottom:4px;}
+  input,select,textarea{
+    width:100%;padding:9px 10px;border-radius:8px;border:1px solid #DAD4BE;
+    font-family:'Inter',sans-serif;font-size:14px;background:#fff;color:var(--ink);
+  }
+  input:focus,select:focus,textarea:focus{outline:2px solid var(--gold);outline-offset:1px;}
+
+  .btn{
+    display:inline-flex;align-items:center;justify-content:center;gap:6px;
+    padding:10px 16px;border-radius:8px;border:none;
+    font-family:'Inter',sans-serif;font-weight:600;font-size:14px;
+    cursor:pointer;transition:filter .15s ease;
+  }
+  .btn:hover{filter:brightness(1.06);}
+  .btn:active{filter:brightness(0.95);}
+  .btn-primary{background:var(--court-green-deep);color:var(--court-line);}
+  .btn-gold{background:var(--gold);color:#2B1F02;}
+  .btn-ghost{background:transparent;color:var(--net-red);border:1px solid var(--net-red);padding:6px 10px;font-size:12px;}
+  .btn-full{width:100%;margin-top:6px;}
+
+  table{width:100%;border-collapse:collapse;font-size:13px;}
+  th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:0.5px;color:var(--ink-soft);border-bottom:1px solid #E4DFCB;padding:8px 6px;}
+  td{padding:9px 6px;border-bottom:1px solid #EFEBDC;vertical-align:top;}
+  tr:last-child td{border-bottom:none;}
+  .amt-in{color:#1E7A44;font-weight:600;}
+  .amt-out{color:var(--net-red-deep);font-weight:600;}
+  .tag{display:inline-block;font-size:10.5px;padding:2px 8px;border-radius:20px;font-weight:600;white-space:nowrap;}
+  .tag-iuran{background:#E1F0E4;color:#1E7A44;}
+  .tag-kock{background:#FDECEA;color:var(--net-red-deep);}
+  .tag-sewa{background:#FCEEDA;color:var(--gold-deep);}
+  .tag-lain{background:#EFEBDC;color:var(--ink-soft);}
+
+  .empty{text-align:center;padding:26px 10px;color:var(--ink-soft);font-size:13px;}
+
+  .sched-card{background:var(--card);border-radius:14px;padding:16px 18px;margin-bottom:14px;box-shadow:0 8px 20px var(--shadow);border-left:5px solid var(--gold);}
+  .sched-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;}
+  .sched-day{font-family:'Bebas Neue',sans-serif;font-size:24px;color:var(--court-green-deep);letter-spacing:0.5px;line-height:1;}
+  .sched-meta{font-size:13px;color:var(--ink-soft);margin-top:4px;}
+  .sched-note{font-size:13px;color:var(--ink);margin-top:8px;}
+  .attendees{margin-top:12px;padding-top:12px;border-top:1px solid #EFEBDC;}
+  .attendees .label{font-size:11px;text-transform:uppercase;letter-spacing:0.5px;color:var(--ink-soft);margin-bottom:8px;}
+  .chip-row{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;}
+  .chip{background:#E1F0E4;color:#1E7A44;font-size:12.5px;font-weight:600;padding:5px 10px;border-radius:20px;display:flex;align-items:center;gap:6px;}
+  .chip button{background:none;border:none;color:#1E7A44;cursor:pointer;font-size:13px;line-height:1;padding:0;}
+  .join-row{display:flex;gap:8px;}
+  .join-row input{flex:1;}
+
+  .toolbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;}
+  .toolbar h2{margin:0;}
+
+  .footnote{text-align:center;color:rgba(244,239,225,0.5);font-size:12px;margin-top:24px;}
+  .status{font-size:12px;color:var(--ink-soft);margin-top:8px;}
+  .status.err{color:var(--net-red-deep);}
+  .badge-viewonly{
+    font-size:11.5px;color:var(--ink-soft);background:#EFEBDC;
+    padding:3px 10px;border-radius:20px;display:inline-block;margin-bottom:12px;
+  }
+
+  @media(max-width:480px){
+    header h1{font-size:32px;}
+    form.grid{grid-template-columns:1fr;}
+    .scoreboard{grid-template-columns:1fr;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <svg class="mark" viewBox="0 0 64 64" fill="none">
+      <circle cx="32" cy="20" r="11" fill="#F4EFE1"/>
+      <path d="M21 26 L14 54 M43 26 L50 54 M27 30 L22 54 M37 30 L42 54 M32 31 L32 55" stroke="#F4EFE1" stroke-width="2" stroke-linecap="round"/>
+      <path d="M13 54 Q32 46 51 54" stroke="#D4A017" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+    </svg>
+    <div>
+      <h1>PB COBRA</h1>
+      <p>Catatan kas &amp; jadwal main klub</p>
+    </div>
+  </header>
+
+  <div class="auth-bar">
+    <span id="auth-label">Mode: anggota (lihat saja)</span>
+    <button id="btn-toggle-login">Login Admin</button>
+    <button id="btn-logout" style="display:none;">Logout</button>
+  </div>
+
+  <div class="login-box" id="login-box">
+    <div class="field">
+      <label for="login-email">Email admin</label>
+      <input id="login-email" type="email" placeholder="pengurus@pbcobra.club">
+    </div>
+    <div class="field">
+      <label for="login-password">Kata sandi</label>
+      <input id="login-password" type="password" placeholder="••••••••">
+    </div>
+    <button class="btn btn-gold" id="btn-login">Masuk</button>
+    <div class="login-status" id="login-status"></div>
+  </div>
+
+  <nav class="tabs">
+    <button class="tab-btn active" data-tab="keuangan">Keuangan</button>
+    <button class="tab-btn" data-tab="jadwal">Jadwal Main</button>
+  </nav>
+
+  <!-- ===================== KEUANGAN ===================== -->
+  <section id="panel-keuangan" class="panel active">
+
+    <div class="scoreboard">
+      <div class="score-cell in">
+        <div class="label">Pemasukan</div>
+        <div class="value" id="score-in">Rp 0</div>
+      </div>
+      <div class="score-cell out">
+        <div class="label">Pengeluaran</div>
+        <div class="value" id="score-out">Rp 0</div>
+      </div>
+      <div class="score-cell saldo">
+        <div class="label">Saldo Kas</div>
+        <div class="value" id="score-saldo">Rp 0</div>
+      </div>
+    </div>
+
+    <div class="card admin-only">
+      <h2>Tambah Transaksi</h2>
+      <form class="grid" id="form-transaksi">
+        <div>
+          <label for="t-type">Jenis</label>
+          <select id="t-type" required>
+            <option value="in">Pemasukan</option>
+            <option value="out">Pengeluaran</option>
+          </select>
+        </div>
+        <div>
+          <label for="t-cat">Kategori</label>
+          <select id="t-cat" required></select>
+        </div>
+        <div>
+          <label for="t-name">Nama / Keterangan</label>
+          <input id="t-name" type="text" placeholder="mis. Budi, atau toko kock" required>
+        </div>
+        <div>
+          <label for="t-amount">Jumlah (Rp)</label>
+          <input id="t-amount" type="number" min="0" step="1000" placeholder="50000" required>
+        </div>
+        <div>
+          <label for="t-date">Tanggal</label>
+          <input id="t-date" type="date" required>
+        </div>
+        <div>
+          <label for="t-note">Catatan (opsional)</label>
+          <input id="t-note" type="text" placeholder="mis. iuran bulan Agustus">
+        </div>
+        <div class="full">
+          <button type="submit" class="btn btn-gold btn-full">Simpan Transaksi</button>
+        </div>
+      </form>
+      <div id="t-status" class="status"></div>
+    </div>
+
+    <div class="card">
+      <div class="toolbar">
+        <h2>Riwayat Transaksi</h2>
+        <select id="t-filter" style="width:auto;">
+          <option value="all">Semua</option>
+          <option value="in">Pemasukan</option>
+          <option value="out">Pengeluaran</option>
+        </select>
+      </div>
+      <div style="overflow-x:auto;">
+        <table>
+          <thead>
+            <tr><th>Tanggal</th><th>Kategori</th><th>Keterangan</th><th>Jumlah</th><th class="admin-only-inline" style="display:none;"></th></tr>
+          </thead>
+          <tbody id="t-table-body"></tbody>
+        </table>
+      </div>
+      <div id="t-empty" class="empty" style="display:none;">Belum ada transaksi.</div>
+    </div>
+  </section>
+
+  <!-- ===================== JADWAL ===================== -->
+  <section id="panel-jadwal" class="panel">
+
+    <div class="card admin-only">
+      <h2>Tambah Jadwal Main</h2>
+      <form class="grid" id="form-jadwal">
+        <div>
+          <label for="j-date">Tanggal</label>
+          <input id="j-date" type="date" required>
+        </div>
+        <div>
+          <label for="j-time">Jam</label>
+          <input id="j-time" type="time" required>
+        </div>
+        <div class="full">
+          <label for="j-loc">Lokasi Lapangan</label>
+          <input id="j-loc" type="text" placeholder="mis. GOR Sinar Jaya, Lap. 2" required>
+        </div>
+        <div class="full">
+          <label for="j-note">Catatan (opsional)</label>
+          <input id="j-note" type="text" placeholder="mis. bawa kock sendiri, sesi latihan">
+        </div>
+        <div class="full">
+          <button type="submit" class="btn btn-gold btn-full">Simpan Jadwal</button>
+        </div>
+      </form>
+      <div id="j-status" class="status"></div>
+    </div>
+
+    <div id="j-list"></div>
+    <div id="j-empty" class="empty" style="display:none;">Belum ada jadwal main.</div>
+  </section>
+
+  <p class="footnote">Data tersimpan di Supabase &mdash; semua anggota yang membuka link ini melihat data yang sama.</p>
+</div>
+
+<script>
+/* =====================================================================
+   GANTI dua nilai di bawah ini dengan milik project Supabase kamu
+   (Project Settings > API di dashboard Supabase)
+===================================================================== */
+const SUPABASE_URL = 'GANTI_DENGAN_SUPABASE_URL';
+const SUPABASE_ANON_KEY = 'GANTI_DENGAN_SUPABASE_ANON_KEY';
+
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+const CATS = {
+  in: [{v:'iuran',l:'Iuran Anggota'},{v:'lain',l:'Lainnya'}],
+  out:[{v:'kock',l:'Beli Kock'},{v:'sewa',l:'Sewa Lapangan'},{v:'lain',l:'Lainnya'}]
+};
+const TAG_CLASS = {iuran:'tag-iuran',kock:'tag-kock',sewa:'tag-sewa',lain:'tag-lain'};
+const CAT_LABEL = {iuran:'Iuran Anggota',lain:'Lainnya',kock:'Beli Kock',sewa:'Sewa Lapangan'};
+const DAY_NAMES = ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
+
+let transactions = [];
+let schedules = [];
+let isAdmin = false;
+
+const rupiah = n => 'Rp ' + Math.round(n).toLocaleString('id-ID');
+const todayISO = () => new Date().toISOString().slice(0,10);
+
+function setStatus(el, msg, isErr){
+  el.textContent = msg;
+  el.className = 'status' + (isErr ? ' err' : '');
+  if(msg) setTimeout(()=>{ el.textContent=''; }, 3500);
+}
+function escapeHtml(str){
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+/* ---------- Tabs ---------- */
+document.querySelectorAll('.tab-btn').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('panel-'+btn.dataset.tab).classList.add('active');
+  });
+});
+
+/* ---------- Kategori dropdown ---------- */
+const typeSel = document.getElementById('t-type');
+const catSel = document.getElementById('t-cat');
+function refreshCatOptions(){
+  const opts = CATS[typeSel.value];
+  catSel.innerHTML = opts.map(o=>`<option value="${o.v}">${o.l}</option>`).join('');
+}
+typeSel.addEventListener('change', refreshCatOptions);
+refreshCatOptions();
+document.getElementById('t-date').value = todayISO();
+document.getElementById('j-date').value = todayISO();
+
+/* ---------- Auth ---------- */
+const loginBox = document.getElementById('login-box');
+document.getElementById('btn-toggle-login').addEventListener('click', ()=>{
+  loginBox.classList.toggle('open');
+});
+
+document.getElementById('btn-login').addEventListener('click', async ()=>{
+  const email = document.getElementById('login-email').value.trim();
+  const password = document.getElementById('login-password').value;
+  const statusEl = document.getElementById('login-status');
+  if(!email || !password){
+    statusEl.textContent = 'Isi email dan kata sandi.';
+    return;
+  }
+  const { error } = await sb.auth.signInWithPassword({ email, password });
+  if(error){
+    statusEl.textContent = 'Login gagal: email atau kata sandi salah.';
+    return;
+  }
+  statusEl.textContent = '';
+  loginBox.classList.remove('open');
+  document.getElementById('login-email').value = '';
+  document.getElementById('login-password').value = '';
+});
+
+document.getElementById('btn-logout').addEventListener('click', async ()=>{
+  await sb.auth.signOut();
+});
+
+function applyAuthUI(session){
+  isAdmin = !!session;
+  document.body.classList.toggle('is-admin', isAdmin);
+  document.getElementById('auth-label').textContent = isAdmin
+    ? 'Mode: admin (' + (session.user.email || '') + ')'
+    : 'Mode: anggota (lihat saja)';
+  document.getElementById('btn-toggle-login').style.display = isAdmin ? 'none' : 'inline-flex';
+  document.getElementById('btn-logout').style.display = isAdmin ? 'inline-flex' : 'none';
+  renderTransactions();
+  renderSchedules();
+}
+
+sb.auth.onAuthStateChange((_event, session)=>{ applyAuthUI(session); });
+
+/* ---------- Data loading ---------- */
+async function loadTransactions(){
+  const { data, error } = await sb.from('transactions').select('*').order('date', { ascending:false });
+  transactions = error ? [] : data;
+  renderTransactions();
+}
+async function loadSchedules(){
+  const { data, error } = await sb.from('schedules').select('*, attendees(*)').order('date', { ascending:true }).order('time', { ascending:true });
+  schedules = error ? [] : data;
+  renderSchedules();
+}
+
+/* ---------- Render Keuangan ---------- */
+function renderScoreboard(){
+  const totalIn = transactions.filter(t=>t.type==='in').reduce((a,b)=>a+Number(b.amount),0);
+  const totalOut = transactions.filter(t=>t.type==='out').reduce((a,b)=>a+Number(b.amount),0);
+  document.getElementById('score-in').textContent = rupiah(totalIn);
+  document.getElementById('score-out').textContent = rupiah(totalOut);
+  document.getElementById('score-saldo').textContent = rupiah(totalIn - totalOut);
+}
+
+function renderTransactions(){
+  renderScoreboard();
+  const filter = document.getElementById('t-filter').value;
+  const body = document.getElementById('t-table-body');
+  const empty = document.getElementById('t-empty');
+  let list = filter === 'all' ? transactions : transactions.filter(t=>t.type===filter);
+
+  if(list.length===0){
+    body.innerHTML='';
+    empty.style.display='block';
+    return;
+  }
+  empty.style.display='none';
+
+  body.innerHTML = list.map(t=>{
+    const dateFmt = new Date(t.date+'T00:00:00').toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric'});
+    const tagClass = TAG_CLASS[t.category] || 'tag-lain';
+    const amtClass = t.type==='in' ? 'amt-in' : 'amt-out';
+    const sign = t.type==='in' ? '+' : '-';
+    const noteHtml = t.note ? `<div style="color:var(--ink-soft);font-size:11.5px;margin-top:2px;">${escapeHtml(t.note)}</div>` : '';
+    const delBtn = isAdmin ? `<td><button class="btn btn-ghost" data-del="${t.id}">Hapus</button></td>` : '';
+    return `<tr>
+      <td>${dateFmt}</td>
+      <td><span class="tag ${tagClass}">${CAT_LABEL[t.category]||t.category}</span></td>
+      <td>${escapeHtml(t.name)}${noteHtml}</td>
+      <td class="${amtClass}">${sign} ${rupiah(t.amount)}</td>
+      ${delBtn}
+    </tr>`;
+  }).join('');
+
+  body.querySelectorAll('[data-del]').forEach(btn=>{
+    btn.addEventListener('click', async ()=>{
+      const { error } = await sb.from('transactions').delete().eq('id', btn.dataset.del);
+      if(!error) loadTransactions();
+    });
+  });
+}
+
+document.getElementById('t-filter').addEventListener('change', renderTransactions);
+
+document.getElementById('form-transaksi').addEventListener('submit', async (e)=>{
+  e.preventDefault();
+  const statusEl = document.getElementById('t-status');
+  const amount = parseFloat(document.getElementById('t-amount').value);
+  if(!amount || amount <= 0){
+    setStatus(statusEl, 'Jumlah harus lebih dari 0.', true);
+    return;
+  }
+  const { error } = await sb.from('transactions').insert({
+    type: typeSel.value,
+    category: catSel.value,
+    name: document.getElementById('t-name').value.trim(),
+    amount: amount,
+    date: document.getElementById('t-date').value,
+    note: document.getElementById('t-note').value.trim() || null
+  });
+  if(error){
+    setStatus(statusEl, 'Gagal menyimpan: ' + error.message, true);
+    return;
+  }
+  await loadTransactions();
+  document.getElementById('t-name').value='';
+  document.getElementById('t-amount').value='';
+  document.getElementById('t-note').value='';
+  document.getElementById('t-date').value = todayISO();
+  setStatus(statusEl, 'Transaksi tersimpan.', false);
+});
+
+/* ---------- Render Jadwal ---------- */
+function renderSchedules(){
+  const list = document.getElementById('j-list');
+  const empty = document.getElementById('j-empty');
+
+  if(schedules.length===0){
+    list.innerHTML='';
+    empty.style.display='block';
+    return;
+  }
+  empty.style.display='none';
+
+  list.innerHTML = schedules.map(s=>{
+    const d = new Date(s.date+'T00:00:00');
+    const dayName = DAY_NAMES[d.getDay()];
+    const dateFmt = d.toLocaleDateString('id-ID',{day:'2-digit',month:'long',year:'numeric'});
+    const noteHtml = s.note ? `<div class="sched-note">${escapeHtml(s.note)}</div>` : '';
+    const attendees = s.attendees || [];
+    const chips = attendees.map(a => `<span class="chip">${escapeHtml(a.name)}<button data-remove-att="${a.id}" aria-label="Hapus">&times;</button></span>`).join('');
+    const delBtn = isAdmin ? `<button class="btn btn-ghost" data-del-sched="${s.id}">Hapus</button>` : '';
+    return `<div class="sched-card">
+      <div class="sched-top">
+        <div>
+          <div class="sched-day">${dayName}, ${dateFmt}</div>
+          <div class="sched-meta">Jam ${s.time} &middot; ${escapeHtml(s.location)}</div>
+          ${noteHtml}
+        </div>
+        ${delBtn}
+      </div>
+      <div class="attendees">
+        <div class="label">Yang ikut main (${attendees.length})</div>
+        <div class="chip-row">${chips || '<span style="font-size:12.5px;color:var(--ink-soft);">Belum ada yang daftar.</span>'}</div>
+        <div class="join-row">
+          <input type="text" placeholder="Nama kamu" data-join-input="${s.id}">
+          <button class="btn btn-primary" data-join-btn="${s.id}">Ikut Main</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+
+  list.querySelectorAll('[data-del-sched]').forEach(btn=>{
+    btn.addEventListener('click', async ()=>{
+      const { error } = await sb.from('schedules').delete().eq('id', btn.dataset.delSched);
+      if(!error) loadSchedules();
+    });
+  });
+
+  list.querySelectorAll('[data-join-btn]').forEach(btn=>{
+    btn.addEventListener('click', async ()=>{
+      const id = btn.dataset.joinBtn;
+      const input = list.querySelector(`[data-join-input="${id}"]`);
+      const name = input.value.trim();
+      if(!name) return;
+      const { error } = await sb.from('attendees').insert({ schedule_id: id, name });
+      if(!error) loadSchedules();
+    });
+  });
+
+  list.querySelectorAll('[data-remove-att]').forEach(btn=>{
+    btn.addEventListener('click', async ()=>{
+      const { error } = await sb.from('attendees').delete().eq('id', btn.dataset.removeAtt);
+      if(!error) loadSchedules();
+    });
+  });
+}
+
+document.getElementById('form-jadwal').addEventListener('submit', async (e)=>{
+  e.preventDefault();
+  const statusEl = document.getElementById('j-status');
+  const { error } = await sb.from('schedules').insert({
+    date: document.getElementById('j-date').value,
+    time: document.getElementById('j-time').value,
+    location: document.getElementById('j-loc').value.trim(),
+    note: document.getElementById('j-note').value.trim() || null
+  });
+  if(error){
+    setStatus(statusEl, 'Gagal menyimpan: ' + error.message, true);
+    return;
+  }
+  await loadSchedules();
+  document.getElementById('j-loc').value='';
+  document.getElementById('j-note').value='';
+  document.getElementById('j-time').value='';
+  document.getElementById('j-date').value = todayISO();
+  setStatus(statusEl, 'Jadwal tersimpan.', false);
+});
+
+/* ---------- Init ---------- */
+(async function init(){
+  const { data: { session } } = await sb.auth.getSession();
+  applyAuthUI(session);
+  await loadTransactions();
+  await loadSchedules();
+})();
+</script>
+</body>
+</html>
