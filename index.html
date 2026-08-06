@@ -132,11 +132,12 @@
   .btn-full{width:100%;margin-top:6px;}
 
   table{width:100%;border-collapse:collapse;font-size:13px;}
+  th:nth-child(4){white-space:nowrap;width:1%;}
   th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:0.5px;color:var(--ink-soft);border-bottom:1px solid #E4DFCB;padding:8px 6px;}
   td{padding:9px 6px;border-bottom:1px solid #EFEBDC;vertical-align:top;}
   tr:last-child td{border-bottom:none;}
-  .amt-in{color:#1E7A44;font-weight:600;}
-  .amt-out{color:var(--net-red-deep);font-weight:600;}
+  .amt-in{color:#1E7A44;font-weight:600;white-space:nowrap;width:1%;}
+  .amt-out{color:var(--net-red-deep);font-weight:600;white-space:nowrap;width:1%;}
   .tag{display:inline-block;font-size:10.5px;padding:2px 8px;border-radius:20px;font-weight:600;white-space:nowrap;}
   .tag-iuran{background:#E1F0E4;color:#1E7A44;}
   .tag-kock{background:#FDECEA;color:var(--net-red-deep);}
@@ -244,6 +245,9 @@
     header h1{font-size:32px;}
     form.grid{grid-template-columns:1fr;}
     .scoreboard{grid-template-columns:1fr;}
+    .net-saldo-row{flex-direction:column;align-items:center;text-align:center;gap:4px;padding:14px 16px;}
+    .net-saldo-row .label{width:100%;}
+    .net-saldo-row .value{font-size:22px;}
   }
 </style>
 </head>
