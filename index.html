@@ -355,28 +355,30 @@
       <div id="debt-list"></div>
       <div id="debt-empty" class="empty" style="display:none;">Belum ada catatan hutang.</div>
 
-      <form class="grid admin-only" id="form-debt" style="margin-top:14px;padding-top:14px;border-top:1px solid #EFEBDC;">
-        <div>
-          <label for="d-name">Nama Anggota</label>
-          <input id="d-name" type="text" placeholder="mis. Siti" required>
-        </div>
-        <div>
-          <label for="d-amount">Jumlah (Rp)</label>
-          <input id="d-amount" type="number" min="0" step="1000" placeholder="50000" required>
-        </div>
-        <div>
-          <label for="d-date">Tanggal</label>
-          <input id="d-date" type="date" required>
-        </div>
-        <div>
-          <label for="d-reason">Keterangan</label>
-          <input id="d-reason" type="text" placeholder="mis. talangan sewa lapangan">
-        </div>
-        <div class="full">
-          <button type="submit" class="btn btn-primary btn-full">Catat Hutang</button>
-        </div>
-      </form>
-      <div id="debt-status" class="status"></div>
+      <div class="admin-only">
+        <form class="grid" id="form-debt" style="margin-top:14px;padding-top:14px;border-top:1px solid #EFEBDC;">
+          <div>
+            <label for="d-name">Nama Anggota</label>
+            <input id="d-name" type="text" placeholder="mis. Siti" required>
+          </div>
+          <div>
+            <label for="d-amount">Jumlah (Rp)</label>
+            <input id="d-amount" type="number" min="0" step="1000" placeholder="50000" required>
+          </div>
+          <div>
+            <label for="d-date">Tanggal</label>
+            <input id="d-date" type="date" required>
+          </div>
+          <div>
+            <label for="d-reason">Keterangan</label>
+            <input id="d-reason" type="text" placeholder="mis. talangan sewa lapangan">
+          </div>
+          <div class="full">
+            <button type="submit" class="btn btn-primary btn-full">Catat Hutang</button>
+          </div>
+        </form>
+        <div id="debt-status" class="status"></div>
+      </div>
     </div>
   </section>
 
