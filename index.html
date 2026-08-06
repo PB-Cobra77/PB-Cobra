@@ -268,24 +268,26 @@
       <div id="bank-list"></div>
       <div id="bank-empty" class="empty" style="display:none;padding:14px 0;">Belum ada rekening ditambahkan.</div>
 
-      <form class="grid admin-only" id="form-bank" style="margin-top:14px;padding-top:14px;border-top:1px solid #EFEBDC;">
-        <div>
-          <label for="bank-name">Nama Bank</label>
-          <input id="bank-name" type="text" placeholder="mis. BCA" required>
-        </div>
-        <div>
-          <label for="bank-number">Nomor Rekening</label>
-          <input id="bank-number" type="text" placeholder="1234567890" required>
-        </div>
-        <div class="full">
-          <label for="bank-holder">Atas Nama</label>
-          <input id="bank-holder" type="text" placeholder="mis. Budi Santoso" required>
-        </div>
-        <div class="full">
-          <button type="submit" class="btn btn-primary btn-full">Tambah Rekening</button>
-        </div>
-      </form>
-      <div id="bank-status" class="status"></div>
+      <div class="admin-only">
+        <form class="grid" id="form-bank" style="margin-top:14px;padding-top:14px;border-top:1px solid #EFEBDC;">
+          <div>
+            <label for="bank-name">Nama Bank</label>
+            <input id="bank-name" type="text" placeholder="mis. BCA" required>
+          </div>
+          <div>
+            <label for="bank-number">Nomor Rekening</label>
+            <input id="bank-number" type="text" placeholder="1234567890" required>
+          </div>
+          <div class="full">
+            <label for="bank-holder">Atas Nama</label>
+            <input id="bank-holder" type="text" placeholder="mis. Budi Santoso" required>
+          </div>
+          <div class="full">
+            <button type="submit" class="btn btn-primary btn-full">Tambah Rekening</button>
+          </div>
+        </form>
+        <div id="bank-status" class="status"></div>
+      </div>
     </div>
 
     <div class="card admin-only">
