@@ -156,6 +156,10 @@
   .pagination .btn-ghost{color:var(--court-green-deep);border-color:#DAD4BE;}
   .pagination .btn-ghost:disabled{opacity:0.4;cursor:not-allowed;}
 
+  .tx-name{font-weight:600;color:var(--ink);}
+  .tx-note{color:var(--ink-soft);font-size:11.5px;margin-top:3px;font-style:italic;}
+  .tx-note::before{content:"Catatan: ";font-style:normal;font-weight:600;}
+
   .empty{text-align:center;padding:26px 10px;color:var(--ink-soft);font-size:13px;}
 
   .sched-card{background:var(--card);border-radius:14px;padding:16px 18px;margin-bottom:14px;box-shadow:0 8px 20px var(--shadow);border-left:5px solid var(--gold);}
@@ -873,12 +877,12 @@ function renderTransactions(){
     const tagClass = TAG_CLASS[t.category] || 'tag-lain';
     const amtClass = t.type==='in' ? 'amt-in' : 'amt-out';
     const sign = t.type==='in' ? '+' : '-';
-    const noteHtml = t.note ? `<div style="color:var(--ink-soft);font-size:11.5px;margin-top:2px;">${escapeHtml(t.note)}</div>` : '';
+    const noteHtml = t.note ? `<div class="tx-note">${escapeHtml(t.note)}</div>` : '';
     const delBtn = isAdmin ? `<td data-label="Aksi"><button class="btn btn-ghost" data-del="${t.id}">Hapus</button></td>` : '';
     return `<tr>
       <td data-label="Tanggal">${dateFmt}</td>
       <td data-label="Kategori"><span class="tag ${tagClass}">${CAT_LABEL[t.category]||t.category}</span></td>
-      <td data-label="Keterangan">${escapeHtml(t.name)}${noteHtml}</td>
+      <td data-label="Keterangan"><span class="tx-name">${escapeHtml(t.name)}</span>${noteHtml}</td>
       <td data-label="Jumlah" class="${amtClass}">${sign} ${rupiah(t.amount)}</td>
       ${delBtn}
     </tr>`;
