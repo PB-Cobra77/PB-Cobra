@@ -188,6 +188,23 @@
   .status-unpaid{background:#FDECEA;color:var(--net-red-deep);}
   .status-paid{background:#E1F0E4;color:#1E7A44;}
 
+  .net-saldo-row{
+    display:none;
+    justify-content:space-between;
+    align-items:center;
+    gap:10px;
+    background:var(--court-green-deep);
+    border:1px solid rgba(212,160,23,0.35);
+    border-radius:12px;
+    padding:12px 16px;
+    margin:-10px 0 18px;
+  }
+  .net-saldo-row.show{display:flex;}
+  .net-saldo-row .label{font-size:12.5px;color:rgba(244,239,225,0.72);}
+  .net-saldo-row .value{font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:1px;}
+  .net-saldo-row .value.positive{color:#8FD6A8;}
+  .net-saldo-row .value.negative{color:#E39187;}
+
   .debt-banner{
     display:none;
     background:#FDECEA;border:1px solid var(--net-red);color:var(--net-red-deep);
@@ -257,6 +274,11 @@
         <div class="label">Saldo Kas</div>
         <div class="value" id="score-saldo">Rp 0</div>
       </div>
+    </div>
+
+    <div class="net-saldo-row" id="net-saldo-row">
+      <span class="label">Saldo bersih (kas &minus; hutang belum dibayar)</span>
+      <span class="value" id="net-saldo-value">Rp 0</span>
     </div>
 
     <div class="debt-banner" id="debt-banner">
@@ -611,6 +633,7 @@ async function loadDebts(){
 }
 
 function renderDebts(){
+  renderScoreboard();
   const list = document.getElementById('debt-list');
   const empty = document.getElementById('debt-empty');
   const badge = document.getElementById('debt-total-badge');
@@ -736,6 +759,19 @@ function renderScoreboard(){
     debtBanner.classList.add('show');
   }else{
     debtBanner.classList.remove('show');
+  }
+
+  /* Saldo bersih = saldo kas dikurangi total hutang yang belum dibayar ke anggota */
+  const unpaidDebt = debts.filter(d=>!d.paid).reduce((a,b)=>a+Number(b.amount),0);
+  const netSaldoRow = document.getElementById('net-saldo-row');
+  const netSaldoValue = document.getElementById('net-saldo-value');
+  if(unpaidDebt > 0){
+    const netSaldo = saldo - unpaidDebt;
+    netSaldoValue.textContent = netSaldo < 0 ? '-' + rupiah(Math.abs(netSaldo)) : rupiah(netSaldo);
+    netSaldoValue.className = 'value ' + (netSaldo < 0 ? 'negative' : 'positive');
+    netSaldoRow.classList.add('show');
+  }else{
+    netSaldoRow.classList.remove('show');
   }
 }
 
