@@ -169,6 +169,19 @@
     padding:3px 10px;border-radius:20px;display:inline-block;margin-bottom:12px;
   }
 
+  .bank-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #EFEBDC;}
+  .bank-row:last-of-type{border-bottom:none;}
+  .bank-label{font-size:11px;text-transform:uppercase;letter-spacing:0.5px;color:var(--ink-soft);margin-bottom:2px;}
+  .bank-value{font-size:16px;font-weight:600;color:var(--court-green-deep);}
+  #btn-copy-rek{padding:6px 14px;font-size:13px;}
+
+  .debt-banner{
+    display:none;
+    background:#FDECEA;border:1px solid var(--net-red);color:var(--net-red-deep);
+    border-radius:10px;padding:12px 16px;margin-bottom:18px;font-size:13.5px;font-weight:600;
+  }
+  .debt-banner.show{display:block;}
+
   @media(max-width:480px){
     header h1{font-size:32px;}
     form.grid{grid-template-columns:1fr;}
@@ -231,6 +244,52 @@
         <div class="label">Saldo Kas</div>
         <div class="value" id="score-saldo">Rp 0</div>
       </div>
+    </div>
+
+    <div class="debt-banner" id="debt-banner">
+      Saldo kas minus &mdash; klub berhutang ke anggota sebesar <span id="debt-amount"></span>
+    </div>
+
+    <div class="card" id="bank-card">
+      <h2>Rekening Bayar Iuran</h2>
+      <div class="bank-row">
+        <div>
+          <div class="bank-label">Bank</div>
+          <div class="bank-value" id="bank-name-view">Belum diisi</div>
+        </div>
+      </div>
+      <div class="bank-row">
+        <div>
+          <div class="bank-label">Nomor Rekening</div>
+          <div class="bank-value" id="bank-number-view">Belum diisi</div>
+        </div>
+        <button class="btn btn-gold" id="btn-copy-rek" type="button">Salin</button>
+      </div>
+      <div class="bank-row">
+        <div>
+          <div class="bank-label">Atas Nama</div>
+          <div class="bank-value" id="bank-holder-view">Belum diisi</div>
+        </div>
+      </div>
+
+      <form class="grid admin-only" id="form-bank" style="margin-top:14px;padding-top:14px;border-top:1px solid #EFEBDC;">
+        <div>
+          <label for="bank-name">Nama Bank</label>
+          <input id="bank-name" type="text" placeholder="mis. BCA">
+        </div>
+        <div>
+          <label for="bank-number">Nomor Rekening</label>
+          <input id="bank-number" type="text" placeholder="1234567890">
+        </div>
+        <div class="full">
+          <label for="bank-holder">Atas Nama</label>
+          <input id="bank-holder" type="text" placeholder="mis. Budi Santoso">
+        </div>
+        <div class="full">
+          <button type="submit" class="btn btn-primary btn-full">Simpan Rekening</button>
+        </div>
+      </form>
+      <div id="bank-status" class="status"></div>
     </div>
 
     <div class="card admin-only">
@@ -341,10 +400,13 @@ const SUPABASE_ANON_KEY = 'sb_publishable_iUqNIDoTESDRbXsNCehC3A_lTM3YlWc';
 
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-const CATS = {
-  in: [{v:'iuran',l:'Iuran Anggota'},{v:'lain',l:'Lainnya'}],
-  out:[{v:'kock',l:'Beli Kock'},{v:'sewa',l:'Sewa Lapangan'},{v:'lain',l:'Lainnya'}]
-};
+const CATS_ALL = [
+  {v:'iuran',l:'Iuran Anggota'},
+  {v:'kock',l:'Beli Kock'},
+  {v:'sewa',l:'Sewa Lapangan'},
+  {v:'lain',l:'Lainnya'}
+];
+const CATS = { in: CATS_ALL, out: CATS_ALL };
 const TAG_CLASS = {iuran:'tag-iuran',kock:'tag-kock',sewa:'tag-sewa',lain:'tag-lain'};
 const CAT_LABEL = {iuran:'Iuran Anggota',lain:'Lainnya',kock:'Beli Kock',sewa:'Sewa Lapangan'};
 const DAY_NAMES = ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
@@ -433,6 +495,56 @@ function applyAuthUI(session){
 sb.auth.onAuthStateChange((_event, session)=>{ applyAuthUI(session); });
 
 /* ---------- Data loading ---------- */
+let bankInfo = {};
+
+async function loadBankInfo(){
+  const { data, error } = await sb.from('club_settings').select('*').eq('id', 1).single();
+  bankInfo = error ? {} : data;
+  renderBankInfo();
+}
+function renderBankInfo(){
+  document.getElementById('bank-name-view').textContent = bankInfo.bank_name || 'Belum diisi';
+  document.getElementById('bank-number-view').textContent = bankInfo.account_number || 'Belum diisi';
+  document.getElementById('bank-holder-view').textContent = bankInfo.account_holder || 'Belum diisi';
+  document.getElementById('bank-name').value = bankInfo.bank_name || '';
+  document.getElementById('bank-number').value = bankInfo.account_number || '';
+  document.getElementById('bank-holder').value = bankInfo.account_holder || '';
+}
+
+document.getElementById('btn-copy-rek').addEventListener('click', async ()=>{
+  const num = bankInfo.account_number;
+  if(!num) return;
+  const btn = document.getElementById('btn-copy-rek');
+  const original = btn.textContent;
+  try{
+    await navigator.clipboard.writeText(num);
+    btn.textContent = 'Tersalin';
+  }catch(e){
+    btn.textContent = 'Gagal';
+  }
+  setTimeout(()=>{ btn.textContent = original; }, 1500);
+});
+
+document.getElementById('form-bank').addEventListener('submit', async (e)=>{
+  e.preventDefault();
+  const statusEl = document.getElementById('bank-status');
+  const payload = {
+    id: 1,
+    bank_name: document.getElementById('bank-name').value.trim(),
+    account_number: document.getElementById('bank-number').value.trim(),
+    account_holder: document.getElementById('bank-holder').value.trim()
+  };
+  const { error } = await sb.from('club_settings').upsert(payload);
+  if(error){
+    setStatus(statusEl, 'Gagal menyimpan: ' + error.message, true);
+    return;
+  }
+  bankInfo = payload;
+  renderBankInfo();
+  setStatus(statusEl, 'Rekening tersimpan.', false);
+});
+
+/* ---------- Data loading ---------- */
 async function loadTransactions(){
   const { data, error } = await sb.from('transactions').select('*').order('date', { ascending:false });
   transactions = error ? [] : data;
@@ -448,9 +560,18 @@ async function loadSchedules(){
 function renderScoreboard(){
   const totalIn = transactions.filter(t=>t.type==='in').reduce((a,b)=>a+Number(b.amount),0);
   const totalOut = transactions.filter(t=>t.type==='out').reduce((a,b)=>a+Number(b.amount),0);
+  const saldo = totalIn - totalOut;
   document.getElementById('score-in').textContent = rupiah(totalIn);
   document.getElementById('score-out').textContent = rupiah(totalOut);
-  document.getElementById('score-saldo').textContent = rupiah(totalIn - totalOut);
+  document.getElementById('score-saldo').textContent = saldo < 0 ? '-' + rupiah(Math.abs(saldo)) : rupiah(saldo);
+
+  const debtBanner = document.getElementById('debt-banner');
+  if(saldo < 0){
+    document.getElementById('debt-amount').textContent = rupiah(Math.abs(saldo));
+    debtBanner.classList.add('show');
+  }else{
+    debtBanner.classList.remove('show');
+  }
 }
 
 function renderTransactions(){
@@ -614,6 +735,7 @@ document.getElementById('form-jadwal').addEventListener('submit', async (e)=>{
 (async function init(){
   const { data: { session } } = await sb.auth.getSession();
   applyAuthUI(session);
+  await loadBankInfo();
   await loadTransactions();
   await loadSchedules();
 })();
