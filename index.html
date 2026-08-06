@@ -422,7 +422,7 @@ function applyAuthUI(session){
   isAdmin = !!session;
   document.body.classList.toggle('is-admin', isAdmin);
   document.getElementById('auth-label').textContent = isAdmin
-    ? 'Mode: admin (' + (session.user.email || '') + ')'
+    ? 'Admin'
     : 'Mode: anggota (lihat saja)';
   document.getElementById('btn-toggle-login').style.display = isAdmin ? 'none' : 'inline-flex';
   document.getElementById('btn-logout').style.display = isAdmin ? 'inline-flex' : 'none';
