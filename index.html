@@ -192,7 +192,7 @@
   </header>
 
   <div class="auth-bar">
-    <span id="auth-label">Mode: anggota (lihat saja)</span>
+    <span id="auth-label"></span>
     <button id="btn-toggle-login">Login Admin</button>
     <button id="btn-logout" style="display:none;">Logout</button>
   </div>
@@ -421,9 +421,9 @@ document.getElementById('btn-logout').addEventListener('click', async ()=>{
 function applyAuthUI(session){
   isAdmin = !!session;
   document.body.classList.toggle('is-admin', isAdmin);
-  document.getElementById('auth-label').textContent = isAdmin
-    ? 'Admin'
-    : 'Mode: anggota (lihat saja)';
+  const authLabel = document.getElementById('auth-label');
+  authLabel.style.display = isAdmin ? 'inline' : 'none';
+  authLabel.textContent = isAdmin ? 'Admin' : '';
   document.getElementById('btn-toggle-login').style.display = isAdmin ? 'none' : 'inline-flex';
   document.getElementById('btn-logout').style.display = isAdmin ? 'inline-flex' : 'none';
   renderTransactions();
