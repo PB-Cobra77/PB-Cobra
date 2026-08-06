@@ -169,11 +169,24 @@
     padding:3px 10px;border-radius:20px;display:inline-block;margin-bottom:12px;
   }
 
-  .bank-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #EFEBDC;}
-  .bank-row:last-of-type{border-bottom:none;}
+  .bank-row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #EFEBDC;}
+  .bank-row:last-child{border-bottom:none;}
   .bank-label{font-size:11px;text-transform:uppercase;letter-spacing:0.5px;color:var(--ink-soft);margin-bottom:2px;}
   .bank-value{font-size:16px;font-weight:600;color:var(--court-green-deep);}
+  .bank-sub{font-size:12.5px;color:var(--ink-soft);margin-top:2px;}
+  .bank-actions{display:flex;gap:6px;align-items:center;}
   #btn-copy-rek{padding:6px 14px;font-size:13px;}
+  .btn-copy{padding:6px 14px;font-size:13px;background:var(--gold);color:#2B1F02;}
+
+  .debt-row{padding:10px 0;border-bottom:1px solid #EFEBDC;display:flex;justify-content:space-between;align-items:flex-start;gap:10px;}
+  .debt-row:last-child{border-bottom:none;}
+  .debt-name{font-weight:600;font-size:14px;color:var(--ink);}
+  .debt-meta{font-size:12.5px;color:var(--ink-soft);margin-top:2px;}
+  .debt-amount{font-weight:600;color:var(--net-red-deep);font-size:14px;}
+  .debt-actions{display:flex;flex-direction:column;align-items:flex-end;gap:6px;}
+  .status-badge{font-size:11px;font-weight:600;padding:3px 9px;border-radius:20px;}
+  .status-unpaid{background:#FDECEA;color:var(--net-red-deep);}
+  .status-paid{background:#E1F0E4;color:#1E7A44;}
 
   .debt-banner{
     display:none;
@@ -252,41 +265,24 @@
 
     <div class="card" id="bank-card">
       <h2>Rekening Bayar Iuran</h2>
-      <div class="bank-row">
-        <div>
-          <div class="bank-label">Bank</div>
-          <div class="bank-value" id="bank-name-view">Belum diisi</div>
-        </div>
-      </div>
-      <div class="bank-row">
-        <div>
-          <div class="bank-label">Nomor Rekening</div>
-          <div class="bank-value" id="bank-number-view">Belum diisi</div>
-        </div>
-        <button class="btn btn-gold" id="btn-copy-rek" type="button">Salin</button>
-      </div>
-      <div class="bank-row">
-        <div>
-          <div class="bank-label">Atas Nama</div>
-          <div class="bank-value" id="bank-holder-view">Belum diisi</div>
-        </div>
-      </div>
+      <div id="bank-list"></div>
+      <div id="bank-empty" class="empty" style="display:none;padding:14px 0;">Belum ada rekening ditambahkan.</div>
 
       <form class="grid admin-only" id="form-bank" style="margin-top:14px;padding-top:14px;border-top:1px solid #EFEBDC;">
         <div>
           <label for="bank-name">Nama Bank</label>
-          <input id="bank-name" type="text" placeholder="mis. BCA">
+          <input id="bank-name" type="text" placeholder="mis. BCA" required>
         </div>
         <div>
           <label for="bank-number">Nomor Rekening</label>
-          <input id="bank-number" type="text" placeholder="1234567890">
+          <input id="bank-number" type="text" placeholder="1234567890" required>
         </div>
         <div class="full">
           <label for="bank-holder">Atas Nama</label>
-          <input id="bank-holder" type="text" placeholder="mis. Budi Santoso">
+          <input id="bank-holder" type="text" placeholder="mis. Budi Santoso" required>
         </div>
         <div class="full">
-          <button type="submit" class="btn btn-primary btn-full">Simpan Rekening</button>
+          <button type="submit" class="btn btn-primary btn-full">Tambah Rekening</button>
         </div>
       </form>
       <div id="bank-status" class="status"></div>
@@ -347,6 +343,38 @@
         </table>
       </div>
       <div id="t-empty" class="empty" style="display:none;">Belum ada transaksi.</div>
+    </div>
+
+    <div class="card">
+      <div class="toolbar">
+        <h2>Hutang ke Anggota</h2>
+        <span id="debt-total-badge" class="badge-viewonly" style="display:none;"></span>
+      </div>
+      <div id="debt-list"></div>
+      <div id="debt-empty" class="empty" style="display:none;">Belum ada catatan hutang.</div>
+
+      <form class="grid admin-only" id="form-debt" style="margin-top:14px;padding-top:14px;border-top:1px solid #EFEBDC;">
+        <div>
+          <label for="d-name">Nama Anggota</label>
+          <input id="d-name" type="text" placeholder="mis. Siti" required>
+        </div>
+        <div>
+          <label for="d-amount">Jumlah (Rp)</label>
+          <input id="d-amount" type="number" min="0" step="1000" placeholder="50000" required>
+        </div>
+        <div>
+          <label for="d-date">Tanggal</label>
+          <input id="d-date" type="date" required>
+        </div>
+        <div>
+          <label for="d-reason">Keterangan</label>
+          <input id="d-reason" type="text" placeholder="mis. talangan sewa lapangan">
+        </div>
+        <div class="full">
+          <button type="submit" class="btn btn-primary btn-full">Catat Hutang</button>
+        </div>
+      </form>
+      <div id="debt-status" class="status"></div>
     </div>
   </section>
 
@@ -490,58 +518,191 @@ function applyAuthUI(session){
   document.getElementById('btn-logout').style.display = isAdmin ? 'inline-flex' : 'none';
   renderTransactions();
   renderSchedules();
+  renderBankAccounts();
+  renderDebts();
 }
 
 sb.auth.onAuthStateChange((_event, session)=>{ applyAuthUI(session); });
 
-/* ---------- Data loading ---------- */
-let bankInfo = {};
+/* ---------- Rekening (bisa lebih dari satu) ---------- */
+let bankAccounts = [];
 
-async function loadBankInfo(){
-  const { data, error } = await sb.from('club_settings').select('*').eq('id', 1).single();
-  bankInfo = error ? {} : data;
-  renderBankInfo();
-}
-function renderBankInfo(){
-  document.getElementById('bank-name-view').textContent = bankInfo.bank_name || 'Belum diisi';
-  document.getElementById('bank-number-view').textContent = bankInfo.account_number || 'Belum diisi';
-  document.getElementById('bank-holder-view').textContent = bankInfo.account_holder || 'Belum diisi';
-  document.getElementById('bank-name').value = bankInfo.bank_name || '';
-  document.getElementById('bank-number').value = bankInfo.account_number || '';
-  document.getElementById('bank-holder').value = bankInfo.account_holder || '';
+async function loadBankAccounts(){
+  const { data, error } = await sb.from('bank_accounts').select('*').order('created_at', { ascending:true });
+  bankAccounts = error ? [] : data;
+  renderBankAccounts();
 }
 
-document.getElementById('btn-copy-rek').addEventListener('click', async ()=>{
-  const num = bankInfo.account_number;
-  if(!num) return;
-  const btn = document.getElementById('btn-copy-rek');
-  const original = btn.textContent;
-  try{
-    await navigator.clipboard.writeText(num);
-    btn.textContent = 'Tersalin';
-  }catch(e){
-    btn.textContent = 'Gagal';
+function renderBankAccounts(){
+  const list = document.getElementById('bank-list');
+  const empty = document.getElementById('bank-empty');
+  if(bankAccounts.length===0){
+    list.innerHTML='';
+    empty.style.display='block';
+    return;
   }
-  setTimeout(()=>{ btn.textContent = original; }, 1500);
-});
+  empty.style.display='none';
+  list.innerHTML = bankAccounts.map(b=>{
+    const delBtn = isAdmin ? `<button class="btn btn-ghost" data-del-bank="${b.id}">Hapus</button>` : '';
+    return `<div class="bank-row">
+      <div>
+        <div class="bank-value">${escapeHtml(b.bank_name)} &middot; ${escapeHtml(b.account_number)}</div>
+        <div class="bank-sub">a.n. ${escapeHtml(b.account_holder)}</div>
+      </div>
+      <div class="bank-actions">
+        <button class="btn btn-copy" data-copy-bank="${escapeHtml(b.account_number)}" type="button">Salin</button>
+        ${delBtn}
+      </div>
+    </div>`;
+  }).join('');
+
+  list.querySelectorAll('[data-copy-bank]').forEach(btn=>{
+    btn.addEventListener('click', async ()=>{
+      const original = btn.textContent;
+      try{
+        await navigator.clipboard.writeText(btn.dataset.copyBank);
+        btn.textContent = 'Tersalin';
+      }catch(e){
+        btn.textContent = 'Gagal';
+      }
+      setTimeout(()=>{ btn.textContent = original; }, 1500);
+    });
+  });
+
+  list.querySelectorAll('[data-del-bank]').forEach(btn=>{
+    btn.addEventListener('click', async ()=>{
+      const { error } = await sb.from('bank_accounts').delete().eq('id', btn.dataset.delBank);
+      if(!error) loadBankAccounts();
+    });
+  });
+}
 
 document.getElementById('form-bank').addEventListener('submit', async (e)=>{
   e.preventDefault();
   const statusEl = document.getElementById('bank-status');
-  const payload = {
-    id: 1,
+  const { error } = await sb.from('bank_accounts').insert({
     bank_name: document.getElementById('bank-name').value.trim(),
     account_number: document.getElementById('bank-number').value.trim(),
     account_holder: document.getElementById('bank-holder').value.trim()
-  };
-  const { error } = await sb.from('club_settings').upsert(payload);
+  });
   if(error){
     setStatus(statusEl, 'Gagal menyimpan: ' + error.message, true);
     return;
   }
-  bankInfo = payload;
-  renderBankInfo();
-  setStatus(statusEl, 'Rekening tersimpan.', false);
+  await loadBankAccounts();
+  document.getElementById('bank-name').value='';
+  document.getElementById('bank-number').value='';
+  document.getElementById('bank-holder').value='';
+  setStatus(statusEl, 'Rekening ditambahkan.', false);
+});
+
+/* ---------- Hutang ke Anggota ---------- */
+let debts = [];
+document.getElementById('d-date').value = todayISO();
+
+async function loadDebts(){
+  const { data, error } = await sb.from('debts').select('*').order('paid', { ascending:true }).order('date', { ascending:false });
+  debts = error ? [] : data;
+  renderDebts();
+}
+
+function renderDebts(){
+  const list = document.getElementById('debt-list');
+  const empty = document.getElementById('debt-empty');
+  const badge = document.getElementById('debt-total-badge');
+
+  const unpaidTotal = debts.filter(d=>!d.paid).reduce((a,b)=>a+Number(b.amount),0);
+  if(unpaidTotal > 0){
+    badge.style.display = 'inline-block';
+    badge.textContent = 'Belum dibayar: ' + rupiah(unpaidTotal);
+  }else{
+    badge.style.display = 'none';
+  }
+
+  if(debts.length===0){
+    list.innerHTML='';
+    empty.style.display='block';
+    return;
+  }
+  empty.style.display='none';
+
+  list.innerHTML = debts.map(d=>{
+    const dateFmt = new Date(d.date+'T00:00:00').toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric'});
+    const statusHtml = d.paid
+      ? `<span class="status-badge status-paid">Lunas</span>`
+      : `<span class="status-badge status-unpaid">Belum dibayar</span>`;
+    const reasonHtml = d.reason ? `<div class="debt-meta">${escapeHtml(d.reason)}</div>` : '';
+    const adminBtns = isAdmin ? `
+      ${!d.paid ? `<button class="btn btn-primary" style="padding:6px 10px;font-size:12px;" data-pay-debt="${d.id}">Tandai Lunas</button>` : ''}
+      <button class="btn btn-ghost" data-del-debt="${d.id}">Hapus</button>` : '';
+    return `<div class="debt-row">
+      <div>
+        <div class="debt-name">${escapeHtml(d.member_name)}</div>
+        <div class="debt-meta">${dateFmt}</div>
+        ${reasonHtml}
+      </div>
+      <div class="debt-actions">
+        <div class="debt-amount">${rupiah(d.amount)}</div>
+        ${statusHtml}
+        ${adminBtns}
+      </div>
+    </div>`;
+  }).join('');
+
+  list.querySelectorAll('[data-pay-debt]').forEach(btn=>{
+    btn.addEventListener('click', async ()=>{
+      const debt = debts.find(d=>d.id === btn.dataset.payDebt);
+      if(!debt) return;
+      const { error: txError } = await sb.from('transactions').insert({
+        type:'out',
+        category:'lain',
+        name: debt.member_name,
+        amount: debt.amount,
+        date: todayISO(),
+        note: 'Bayar hutang' + (debt.reason ? ': ' + debt.reason : '')
+      });
+      if(txError){
+        setStatus(document.getElementById('debt-status'), 'Gagal mencatat pembayaran: ' + txError.message, true);
+        return;
+      }
+      await sb.from('debts').update({ paid:true, paid_date: todayISO() }).eq('id', debt.id);
+      await loadDebts();
+      await loadTransactions();
+    });
+  });
+
+  list.querySelectorAll('[data-del-debt]').forEach(btn=>{
+    btn.addEventListener('click', async ()=>{
+      const { error } = await sb.from('debts').delete().eq('id', btn.dataset.delDebt);
+      if(!error) loadDebts();
+    });
+  });
+}
+
+document.getElementById('form-debt').addEventListener('submit', async (e)=>{
+  e.preventDefault();
+  const statusEl = document.getElementById('debt-status');
+  const amount = parseFloat(document.getElementById('d-amount').value);
+  if(!amount || amount <= 0){
+    setStatus(statusEl, 'Jumlah harus lebih dari 0.', true);
+    return;
+  }
+  const { error } = await sb.from('debts').insert({
+    member_name: document.getElementById('d-name').value.trim(),
+    amount: amount,
+    date: document.getElementById('d-date').value,
+    reason: document.getElementById('d-reason').value.trim() || null
+  });
+  if(error){
+    setStatus(statusEl, 'Gagal menyimpan: ' + error.message, true);
+    return;
+  }
+  await loadDebts();
+  document.getElementById('d-name').value='';
+  document.getElementById('d-amount').value='';
+  document.getElementById('d-reason').value='';
+  document.getElementById('d-date').value = todayISO();
+  setStatus(statusEl, 'Hutang tercatat.', false);
 });
 
 /* ---------- Data loading ---------- */
@@ -735,7 +896,8 @@ document.getElementById('form-jadwal').addEventListener('submit', async (e)=>{
 (async function init(){
   const { data: { session } } = await sb.auth.getSession();
   applyAuthUI(session);
-  await loadBankInfo();
+  await loadBankAccounts();
+  await loadDebts();
   await loadTransactions();
   await loadSchedules();
 })();
