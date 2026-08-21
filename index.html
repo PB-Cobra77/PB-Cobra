@@ -1068,7 +1068,15 @@ function renderSchedules(){
   const today = todayISO();
   /* Anggota (non-admin) tidak lagi bisa melihat jadwal yang tanggalnya sudah lewat.
      Admin tetap bisa melihat semuanya, ditandai dengan label "Sudah lewat". */
-  const visibleSchedules = isAdmin ? schedules : schedules.filter(s => s.date >= today);
+  const baseVisible = isAdmin ? schedules : schedules.filter(s => s.date >= today);
+
+  /* Jadwal yang akan datang tetap di atas (urut naik), jadwal yang sudah lewat
+     selalu ditaruh paling bawah (urut dari yang paling baru lewat). */
+  const upcoming = baseVisible.filter(s => s.date >= today)
+    .sort((a,b)=> a.date === b.date ? a.time.localeCompare(b.time) : a.date.localeCompare(b.date));
+  const past = baseVisible.filter(s => s.date < today)
+    .sort((a,b)=> a.date === b.date ? b.time.localeCompare(a.time) : b.date.localeCompare(a.date));
+  const visibleSchedules = [...upcoming, ...past];
 
   if(visibleSchedules.length===0){
     list.innerHTML='';
